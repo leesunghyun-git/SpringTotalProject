@@ -1,75 +1,79 @@
 pipeline {
-	agent any
-	
-	environment {
-			SERVER_IP = "43.200.172.84"
-			SERVER_USER = "ubuntu"
-			APP_DIR = "~/app"
-			JAR_NAME = "SpringTotalProject-0.0.1-SNAPSHOT.war"
-	}
-	
-	stages{
-	
-		/*
-		stage('Check Git Info'){
-			steps {
-				sh '''
-				echo "===Git Info==="
-				git branch 
-				git log -1 
-			   '''
-			}
-		}*/
-		
-		stage('Check Out'){
-			steps {
-				/*git branch: '/main'
-				url 'https://github.com/leesunghyun-git/SpringFinalProject.git'*/
+    agent any
+
+    environment {
+        DOCKERHUB_USER = credentials('DOCKERHUB_USERNAME')
+        DOCKERHUB_PASS = credentials('DOCKERHUB_PASSWORD')
+
+        SERVER_IP   = '43.200.172.84'
+        SERVER_USER = 'ubuntu'
+
+        IMAGE_NAME  = 'sunghyun9737/total-app'
+        CONTAINER   = 'total-app'
+        PORT        = '9090'
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                echo 'Git Checkout'
 				checkout scm
-			}
-		}
-		
-		stage('Gradle Permission'){
-			steps{
-				
-				sh '''
-					chmod +x gradlew
-				   '''
-			}
-		}
-		
-		// build 시작
-		stage('Gradle Build'){
-			steps {
-				sh '''
-				    ./gradlew clean build
-				   '''
-			}
-		}
-		stage('Deploy = rsync') {
-			steps{
-				sshagent(credentials:['SERVER_SSH_KEY']){
-					sh """
-						rsync -avz -e 'ssh -o StrictHostKeyChecking=no' build/libs/*.war ${SERVER_USER}@${SERVER_IP}:${APP_DIR}
-					   """
-				}
-				
-			}
-			
-		}
-		stage('Run Application') {
-			steps{
-				sshagent(credentials:['SERVER_SSH_KEY']){
-					sh """
-ssh -o StrictHostKeyChecking=no ${SERVER_USER}@${SERVER_IP} << 'EOF'
-pkill -f 'java -jar' || true
-nohup java -jar ${APP_DIR}/${JAR_NAME} > log.txt 2>&1 &
+            }
+        }
+
+        stage('Grant Gradle Permission') {
+            steps {
+                sh 'chmod +x gradlew'
+            }
+        }
+
+        stage('Build Jar') {
+            steps {
+                sh './gradlew clean build'
+            }
+        }
+
+        stage('Docker Login') {
+            steps {
+                sh '''
+                echo $DOCKERHUB_PASS | docker login -u $DOCKERHUB_USER --password-stdin
+                '''
+            }
+        }
+
+        stage('Build & Push Docker Image') {
+            steps {
+                sh '''
+                docker build -t $DOCKERHUB_USER/${IMAGE_NAME}:latest .
+                docker push $DOCKERHUB_USER/${IMAGE_NAME}:latest
+                '''
+            }
+        }
+
+        stage('Deploy to Ubuntu Server') {
+            steps {
+                sshagent(credentials: ['SERVER_SSH_KEY']) {
+                    sh """
+                    ssh -o StrictHostKeyChecking=no ${SERVER_USER}@${SERVER_IP} << EOF
+                        docker stop ${CONTAINER} || true
+                        docker rm ${CONTAINER} || true
+                        docker pull $DOCKERHUB_USER/${IMAGE_NAME}:latest
+                        docker run -d --name ${CONTAINER} -p ${PORT}:${PORT} \
+                          $DOCKERHUB_USER/${IMAGE_NAME}:latest
 EOF
-					   """
-				}
-				
-			}
-			
-		}
-	}
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Docker Deploy Success'
+        }
+        failure {
+            echo 'Docker Deploy Failed'
+        }
+    }
 }
