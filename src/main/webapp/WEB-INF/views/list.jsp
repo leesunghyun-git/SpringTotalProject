@@ -17,6 +17,7 @@
 }
 h3 {
 	text-align: center;
+	color:red;
 }
 p {
 	overflow:hidden;
