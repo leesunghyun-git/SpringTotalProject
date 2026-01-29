@@ -23,8 +23,9 @@ pipeline {
 		
 		stage('Check Out'){
 			steps {
-				git branch: '/main'
-				url 'https://github.com/leesunghyun-git/SpringFinalProject.git'
+				/*git branch: '/main'
+				url 'https://github.com/leesunghyun-git/SpringFinalProject.git'*/
+				checkout scm
 			}
 		}
 		
