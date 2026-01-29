@@ -82,7 +82,7 @@
 					   """
 				}
 			}
-			*/
+			
 			
 			stage('Docker Stop And RM'){
 				steps{
