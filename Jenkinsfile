@@ -5,7 +5,7 @@ pipeline {
 			SERVER_IP = "43.200.172.84"
 			SERVER_USER = "ubuntu"
 			APP_DIR = "~/app"
-			JAR_NAME = "SpringTotalProject-0.0.01-SNAPSHOT.war"
+			JAR_NAME = "SpringTotalProject-0.0.1-SNAPSHOT.war"
 	}
 	
 	stages{
@@ -64,7 +64,7 @@ pipeline {
 						ssh -o StrictHostKeyChecking=no ${SERVER_USER}@${SERVER_IP} << 'EOF'
 							pkill -f 'java -jar' || true
 							nohup java -jar ${APP_DIR}/${JAR_NAME} > log.txt 2>&1 & 
-							
+EOF						
 					   """
 				}
 				
