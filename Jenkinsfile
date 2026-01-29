@@ -51,7 +51,7 @@ pipeline {
 				sshagent(credentials:['SERVER_SSH_KEY']){
 					sh '''
 						rsync -avz -e "ssh -o StrictHostKeyChecking=no" \
-						bulid/libs/*.jar ${SERVER_USER}@${SERVER_IP}:${APP_DIR}
+						bulid/libs/*.war ${SERVER_USER}@${SERVER_IP}:${APP_DIR}
 					   '''
 				}
 				
