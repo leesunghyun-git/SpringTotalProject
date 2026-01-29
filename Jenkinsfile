@@ -6,6 +6,8 @@
 			DOCKER_TAG = "latest"
 			EC2_HOST = "43.200.172.84"
 			EC2_USER = "ubuntu"
+			COMPOSE_FILE = "docker-compose.yml"
+			CONTAINER_NAME = "total_app"
 		}
 		stages{
 			stage('Checkout'){
@@ -54,7 +56,7 @@
 				
 				
 			}
-			
+			/*
 			stage('Deploy to EC2'){
 				steps{
 					sshagent(credentials:['SERVER_SSH_KEY']){
@@ -70,8 +72,8 @@
 				}
 				
 			}
+			*/
 			
-			/*
 			stage('Docker Compose Down'){
 				steps{
 					echo 'Docker-compose down'
@@ -81,14 +83,14 @@
 				}
 			}
 			*/
-			/*
+			
 			stage('Docker Stop And RM'){
 				steps{
 					echo 'docker stop rm'
 					sh """
 						docker stop ${CONTAINER_NAME} || true
 						docker rm ${CONTAINER_NAME} || true
-						docker pull ${IMAGE_NAME}
+						docker pull ${DOCKER_IMAGE}
 					   """
 				}
 				
@@ -102,15 +104,15 @@
 				}
 				
 			}
-			*/
-			/*stage('Docker Run'){
+			
+			stage('Docker Run'){
 				steps{
 					echo 'Docker Run'
 					sh """
 						docker stop ${CONTAINER_NAME} || true
 						docker rm ${CONTAINER_NAME} || true
 						
-						docker pull ${IMAGE_NAME}
+						docker pull ${DOCKER_IMAGE}
 						
 						docker run --name ${CONTAINER_NAME} \
 						-it -d -p 9090:9090 \
@@ -118,7 +120,7 @@
 					   """
 					
 				}
-			}*/
+			}
 			
 			 
 		
