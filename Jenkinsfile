@@ -104,7 +104,7 @@
 				}
 				
 			}
-			
+			/*
 			stage('Docker Run'){
 				steps{
 					echo 'Docker Run'
@@ -121,6 +121,7 @@
 					
 				}
 			}
+			*/
 			
 			 
 		
