@@ -1,79 +1,135 @@
-pipeline {
-    agent any
-
-    environment {
-        DOCKERHUB_USER = credentials('DOCKERHUB_USERNAME')
-        DOCKERHUB_PASS = credentials('DOCKERHUB_PASSWORD')
-
-        SERVER_IP   = '43.200.172.84'
-        SERVER_USER = 'ubuntu'
-
-        IMAGE_NAME  = 'sunghyun9737/total-app'
-        CONTAINER   = 'total-app'
-        PORT        = '9090'
-    }
-
-    stages {
-
-        stage('Checkout') {
-            steps {
-                echo 'Git Checkout'
-				checkout scm
-            }
-        }
-
-        stage('Grant Gradle Permission') {
-            steps {
-                sh 'chmod +x gradlew'
-            }
-        }
-
-        stage('Build Jar') {
-            steps {
-                sh './gradlew clean build'
-            }
-        }
-
-        stage('Docker Login') {
-            steps {
-                sh '''
-                echo $DOCKERHUB_PASS | docker login -u $DOCKERHUB_USER --password-stdin
-                '''
-            }
-        }
-
-        stage('Build & Push Docker Image') {
-            steps {
-                sh '''
-                docker build -t $DOCKERHUB_USER/${IMAGE_NAME}:latest .
-                docker push $DOCKERHUB_USER/${IMAGE_NAME}:latest
-                '''
-            }
-        }
-
-        stage('Deploy to Ubuntu Server') {
-            steps {
-                sshagent(credentials: ['SERVER_SSH_KEY']) {
-                    sh """
-                    ssh -o StrictHostKeyChecking=no ${SERVER_USER}@${SERVER_IP} << EOF
-                        docker stop ${CONTAINER} || true
-                        docker rm ${CONTAINER} || true
-                        docker pull $DOCKERHUB_USER/${IMAGE_NAME}:latest
-                        docker run -d --name ${CONTAINER} -p ${PORT}:${PORT} \
-                          $DOCKERHUB_USER/${IMAGE_NAME}:latest
-EOF
-                    """
-                }
-            }
-        }
-    }
-
-    post {
-        success {
-            echo 'Docker Deploy Success'
-        }
-        failure {
-            echo 'Docker Deploy Failed'
-        }
-    }
-}
+	pipeline {
+		agent any
+		
+		environment {
+			DOCKER_IMAGE = "sunghyun9737/total-app"
+			DOCKER_TAG = "latest"
+			EC2_HOST = "43.200.172.84"
+			EC2_USER = "ubuntu"
+		}
+		stages{
+			stage('Checkout'){
+				steps{
+					echo 'Git Checkout'
+					checkout scm
+				}
+			}
+			
+			stage('Gradlew Build') {
+				steps{
+					echo 'Gradle Build'
+					sh """
+					    chmod +x gradlew
+					    ./gradlew clean build
+					   """
+				}
+			}
+			
+			stage('Docker build'){
+				steps {
+					echo 'Docker Image build'
+					sh """
+					 	docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
+					 	
+				       """
+					
+				}
+			}
+			
+			stage('Docker Hub Login'){
+				steps {
+					echo 'Docker Hub Login'
+					withCredentials([usernamePassword(
+						credentialsId: 'dockerhub-config',
+						usernameVariable: 'DOCKER_ID',
+						passwordVariable: 'DOCKER_PW'
+					)]){
+						sh """
+						 	echo $DOCKER_PW | docker login -u $DOCKER_ID --password-stdin
+						 	docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
+						   """
+					}
+					
+				}
+				
+				
+			}
+			
+			stage('Deploy to EC2'){
+				steps{
+					sshagent(credentials:['SERVER_SSH_KEY']){
+					sh """
+					   ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} << EOF
+					        docker stop total_app || true
+					        docker rm total_app || true
+					        docker pull ${DOCKER_IMAGE}:${DOCKER_TAG}
+					        docker run --name total_app -it -d -p 9090:9090 ${DOCKER_IMAGE}:${DOCKER_TAG}
+					   """
+					 
+					}
+				}
+				
+			}
+			
+			/*
+			stage('Docker Compose Down'){
+				steps{
+					echo 'Docker-compose down'
+					sh """
+						docker-compose -f ${COMPOSE_FILE} down || true
+					   """
+				}
+			}
+			*/
+			/*
+			stage('Docker Stop And RM'){
+				steps{
+					echo 'docker stop rm'
+					sh """
+						docker stop ${CONTAINER_NAME} || true
+						docker rm ${CONTAINER_NAME} || true
+						docker pull ${IMAGE_NAME}
+					   """
+				}
+				
+			}	
+			stage('Docker Compose up'){
+				steps{
+					echo 'Docker-compose up'
+					sh """
+					   docker-compose -f ${COMPOSE_FILE} up -d
+					  """
+				}
+				
+			}
+			*/
+			/*stage('Docker Run'){
+				steps{
+					echo 'Docker Run'
+					sh """
+						docker stop ${CONTAINER_NAME} || true
+						docker rm ${CONTAINER_NAME} || true
+						
+						docker pull ${IMAGE_NAME}
+						
+						docker run --name ${CONTAINER_NAME} \
+						-it -d -p 9090:9090 \
+						${IMAGE_NAME}
+					   """
+					
+				}
+			}*/
+			
+			 
+		
+		}
+		post {
+				success{
+					echo 'CI/CD 실행 성공'
+				}
+				failure {
+					echo 'CI/CD 실행 실패'
+					
+				}
+			}
+	}
