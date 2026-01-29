@@ -7,7 +7,7 @@ pipeline {
 			steps {
 				sh '''
 				echo "===Git Info==="
-				git branch
+				git branch 
 				git log -1 
 			   '''
 			}
