@@ -13,7 +13,7 @@ pipeline {
 			sh '''
 				echo "===Git Info==="
 				git branch
-				git log -1
+				git log -1 
 			   '''
 		}
 	}
