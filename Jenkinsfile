@@ -34,44 +34,43 @@ pipeline {
 	            }
 	    }
 	    stage('Deploy') {
-            steps {
-                sh '''
-                echo "▶ 이전 컨테이너 종료"
-                docker rm -f spring-app || true
-
-                echo "▶ 새 컨테이너 실행 (latest)"
-                docker run -d \
-                  --name spring-app \
-                  -p 9090:9090 \
-                  spring-app:latest
-                '''
-
-                sh '''
-                echo "▶ Health Check 시작"
-
-                for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
-                do
-                  STATUS=$(curl -s http://localhost:9090/actuator/health || true)
-                  echo "응답: $STATUS"
-
-                  if echo "$STATUS" | grep -q UP; then
-                    echo "✅ HEALTH CHECK OK"
-
-                    echo "▶ previous 이미지 갱신"
-                    docker tag spring-app:latest spring-app:previous
-
-                    exit 0
-                  fi
-
-                  sleep 2
-                done
-
-                echo "❌ HEALTH CHECK FAIL"
-                exit 1
-                '''
-            }
-        }
-    }
+		    steps {
+		        script {
+		            // 1. 현재 실행 중인 색상 확인
+		            def isBlue = sh(script: "docker ps --format '{{.Names}}' | grep spring-app-blue", returnStatus: true) == 0
+		            def targetColor = isBlue ? "green" : "blue"
+		            def targetPort = isBlue ? "9092" : "9091"
+		            def oldColor = isBlue ? "blue" : "green"
+		
+		            echo "▶ ${targetColor} 배포 시작 (Port: ${targetPort})"
+		
+		            // 2. 새 컨테이너 실행
+		            sh """
+		            IMAGE_NAME=${IMAGE}:latest \
+		            CONTAINER_NAME=spring-app-${targetColor} \
+		            HOST_PORT=${targetPort} \
+		            docker-compose up -d
+		            """
+		
+		            // 3. Health Check (새 컨테이너가 뜰 때까지 대기)
+		            echo "▶ Health Check 중..."
+		            timeout(time: 5, unit: 'MINUTES') {
+		                waitUntil {
+		                    def r = sh script: "curl -s http://localhost:${targetPort}/actuator/health | grep UP", returnStatus: true
+		                    return (r == 0)
+		                }
+		            }
+		
+		            // 4. Nginx 설정 변경 (이 부분이 핵심!)
+		            // 로컬의 nginx.conf를 수정하거나 docker exec로 nginx 설정을 교체합니다.
+		            sh "sed -i 's/localhost:[0-9]*/localhost:${targetPort}/' /etc/nginx/conf.d/service-url.inc"
+		            sh "docker exec nginx-proxy nginx -s reload"
+		
+		            // 5. 이전 컨테이너 종료
+		            sh "docker rm -f spring-app-${oldColor} || true"
+		        }
+		    }
+		}
 
     post {
         failure {
