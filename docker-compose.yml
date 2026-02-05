@@ -1,7 +1,6 @@
 services:
   spring-app:
     image: ${IMAGE_NAME}
-    container_name: ${CONTAINER_NAME}
     ports:
       - "${HOST_PORT}:9090"
     environment:
