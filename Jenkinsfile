@@ -63,7 +63,7 @@ pipeline {
 		
 		            // 4. Nginx 설정 변경 (이 부분이 핵심!)
 		            // 로컬의 nginx.conf를 수정하거나 docker exec로 nginx 설정을 교체합니다.
-		            sh "sed -i 's/localhost:[0-9]*/localhost:${targetPort}/' /etc/nginx/conf.d/service-url.inc"
+		            sh "sed -i 's/localhost:[0-9]*/localhost:${targetPort}/' /home/ubuntu/nginx/conf.d/default.conf"
 		            sh "docker exec nginx-proxy nginx -s reload"
 		
 		            // 5. 이전 컨테이너 종료
