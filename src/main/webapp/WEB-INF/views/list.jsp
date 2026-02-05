@@ -29,7 +29,7 @@ p {
 <body>
 	<div class="container">
 		<div class="row">
-			<h3>AWS CICD 무중단 4회차</h3>
+			<h3>AWS CICD 무중단 컴포즈 1회차</h3>
 			<c:forEach var="vo" items="${list }">
 				<div class="col-md-3">
 				  <div class="thumbnail">
