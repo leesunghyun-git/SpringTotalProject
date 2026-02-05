@@ -71,7 +71,7 @@ pipeline {
 		        }
 		    }
 		}
-
+	}
     post {
         failure {
             echo "♻️ 자동 롤백 시작"
@@ -96,5 +96,5 @@ pipeline {
             cleanWs()
         }
     }
-	}
+	
 }
