@@ -51,7 +51,7 @@ pipeline {
 					export HOST_PORT=${targetPort}
 					
 					# -p 옵션으로 프로젝트 이름을 다르게 주어 별개로 관리합니다.
-					docker-compose -p spring-app-${targetColor} up -d
+					docker-compose -p spring-app-${targetColor} up -d --force-recreate
 					"""
 		
 		            // 3. Health Check (새 컨테이너가 뜰 때까지 대기)
