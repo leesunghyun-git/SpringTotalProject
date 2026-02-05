@@ -50,6 +50,7 @@ pipeline {
 					export CONTAINER_NAME=spring-app-${targetColor}
 					export HOST_PORT=${targetPort}
 					
+					docker-compose -p spring-app-${targetColor} down || true
 					# -p 옵션으로 프로젝트 이름을 다르게 주어 별개로 관리합니다.
 					docker-compose -p spring-app-${targetColor} up -d --force-recreate
 					"""
